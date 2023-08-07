@@ -15,7 +15,7 @@ variable "instances_count" {
 
 variable "virtual_machine_size" {
   description = "The Virtual Machine SKU for the Virtual Machine, Default is Standard_A2_V2"
-  default     = "Standard_D4_v5"
+  default     = "Standard_D4s_v5"
 }
 
 variable "oravm_admin_username" {
