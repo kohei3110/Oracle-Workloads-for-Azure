@@ -24,15 +24,21 @@ data "azurerm_virtual_network" "vnet" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
+data "azurerm_subnet" "snet" {
+  name                 = "Subnet1"
+  virtual_network_name = data.azurerm_virtual_network.vnet.name
+  resource_group_name  = data.azurerm_resource_group.rg.name
+}
+
 #------------------------------------------------------
 # Virtual Machine, NIC
 #------------------------------------------------------
 resource "azurerm_linux_virtual_machine" "ora_vm" {
-  count                 = var.instance_count
+  count                 = var.instances_count
   name                  = "oravm-${count.index}"
   location              = data.azurerm_resource_group.rg.location
   resource_group_name   = data.azurerm_resource_group.rg.name
-  network_interface_ids = [element(concat(azurerm_network_interface.nic.*.id, list("")), count.index)]
+  network_interface_ids = [element(concat(azurerm_network_interface.nic.*.id, tolist([])), count.index)]
   size                  = var.virtual_machine_size
   availability_set_id   = azurerm_availability_set.availability_set.id
 
@@ -55,14 +61,15 @@ resource "azurerm_linux_virtual_machine" "ora_vm" {
 }
 
 resource "azurerm_network_interface" "nic" {
-  count               = var.instance_count
-  name                = var.instances_count == 1 ? lower("nic-${format("vm%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")))}") : lower("nic-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
+  count               = var.instances_count
+  name                = var.instances_count == 1 ? "nic" : "nic-${count.index}"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   ip_configuration {
-    name      = lower("ipconig-${format("vm%s%s", lower(replace(var.virtual_machine_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
-    primary   = true
-    subnet_id = data.azurerm_virtual_network.vnet.subnet_ids[0]
+    name                          = lower("ipconig-${count.index + 1}")
+    primary                       = true
+    subnet_id                     = data.azurerm_subnet.snet.id
+    private_ip_address_allocation = "Dynamic"
   }
 }
 
@@ -108,14 +115,14 @@ resource "azurerm_managed_disk" "redo_log_disk" {
 #------------------------------------------------------
 resource "azurerm_virtual_machine_data_disk_attachment" "data_files_disk_attachment" {
   managed_disk_id    = azurerm_managed_disk.data_files_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.ora_vm.id
+  virtual_machine_id = azurerm_linux_virtual_machine.ora_vm[0].id
   lun                = 0
   caching            = "ReadOnly"
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "redo_log_disk_attachment" {
   managed_disk_id    = azurerm_managed_disk.redo_log_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.ora_vm.id
+  virtual_machine_id = azurerm_linux_virtual_machine.ora_vm[0].id
   lun                = 1
   caching            = "None"
 }
