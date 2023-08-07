@@ -67,9 +67,3 @@ variable "enable_tunneling" {
   description = "Is Tunneling feature enabled for the Bastion Host. Only supported whne `sku` is `Standard`"
   default     = false
 }
-
-variable "tags" {
-  description = "A map of tags to add to all resources"
-  type        = map(string)
-  default     = {}
-}

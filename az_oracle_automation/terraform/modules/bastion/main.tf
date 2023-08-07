@@ -39,7 +39,6 @@ resource "azurerm_public_ip" "pip" {
   allocation_method   = var.public_ip_allocation_method
   sku                 = var.public_ip_sku
   domain_name_label   = var.domain_name_label != null ? var.domain_name_label : format("gw%s%s", lower(replace(var.azure_bastion_service_name, "/[[:^alnum:]]/", "")), random_string.str.result)
-  tags                = merge({ "ResourceName" = lower("${var.azure_bastion_service_name}-${data.azurerm_resource_group.rg.location}-pip") }, var.tags, )
 
   lifecycle {
     ignore_changes = [
@@ -63,7 +62,6 @@ resource "azurerm_bastion_host" "main" {
   scale_units            = var.bastion_host_sku == "Standard" ? var.scale_units : 2
   shareable_link_enabled = var.bastion_host_sku == "Standard" ? var.enable_shareable_link : null
   tunneling_enabled      = var.bastion_host_sku == "Standard" ? var.enable_tunneling : null
-  tags                   = merge({ "ResourceName" = lower(var.azure_bastion_service_name) }, var.tags, )
 
   ip_configuration {
     name                 = "${lower(var.azure_bastion_service_name)}-network"
